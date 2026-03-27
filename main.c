@@ -14,44 +14,157 @@ void clearInput();
 int anzahlKonten(FILE*); //Nicht mehr richtig, sobald newAccount() benutzt wurde!!!
 void auslesen(FILE*, struct Konto*, int);
 int writeToFile();
-void newAccount(struct Konto*, int*);
-int withdraw();
-int deposit();
-int transfer();
+int newAccount(struct Konto*, int*);
+int withdraw(struct Konto*, int, int);
+int deposit(struct Konto*, int, int);
+int transfer(struct Konto*, int, int, int);
 
 int main() {
 
+    //Dateipfad bestimmen
     FILE* accounts = fopen(DATEI, "r+");
     if (accounts == NULL) {
         printf("Fehler beim lesen der Datei.");
         exit(1);
     }
 
+    //VARIABLEN
+    struct Konto *tmpAos;
+    int whileBedingung = 1;
+    int testVariable; //um z.B. auf return 0 zu prüfen
+    int kontoNrTemp, kontoNrTemp2;
+    int betragTemp; //damit bei erneutem Ausführen von z.B. withdraw nicht eine bereits existierende betrag-Variable intitiiert wird
     int anzahl = anzahlKonten(accounts);
     int *anzahlPtr = &anzahl;
     struct Konto *konten = (struct Konto*) malloc(anzahl*sizeof(struct Konto)); //Gibt Warnung über Memory Leak, hab ich mich aber eigentlich drum gekümmert...
 
+    //Datei accounts.txt auslesen
     auslesen(accounts, konten, anzahl);
 
-    char operation = 'n';
-    if (operation == 'n') {
+    //Eingabeaufforderung: Welche Operation?
+    char operation;
 
+    //Immer wieder Eingabe bis zum Programmende
+    while (whileBedingung) {
+        printf("Operation (? für Hilfe, e für Ende): ");
+        scanf(" %c", &operation);
 
-        struct Konto *tmpAos = realloc(konten, anzahl*sizeof(struct Konto) + sizeof(struct Konto)); // Platz für weiteren Eintrag
-        if (konten == NULL) {
-            printf("Fehler bei Speicherzuweisung.");
-            free(tmpAos);
-            exit(1);
+        //was noch fehlt: nach jeder Operation die entsprechenden Konten anzeigen
+
+        //neues Konto anlegen
+        if (operation == 'n') {
+            tmpAos = realloc(konten, anzahl * sizeof(struct Konto) + sizeof(struct Konto));
+            // Platz für weiteren Eintrag
+            if (konten == NULL) {
+                printf("Fehler bei Speicherzuweisung.");
+                free(tmpAos);
+                exit(1);
+            } else {
+                konten = tmpAos;
+
+                testVariable = newAccount(konten, anzahlPtr);
+
+                if (testVariable == 0)
+                    printf("Abheben erfolgreich");
+                else
+                    printf("Fehler beim Erstellen eines Kontos!");
+
+                testVariable = 1;
+                //zurücksetzen, damit bei anderer funktion die if-Bedinung nicht fälschlicherweise zutrifft
+            }
         }
+
+        //Hilfe
+        else if (operation == '?') {
+            printf("Hilfe - Operationen\n");
+            printf("n - Neues Konto\n");
+            printf("w - Abheben\n");
+            printf("d - Einzahlen\n");
+            printf("t - Überweisung\n");
+            printf("s - Änderungen in Backup-Datei speichern\n"); //noch nicht umgesetzt
+        }
+
+        //Ende - Programm beenden
+        else if (operation == 'e') {
+            whileBedingung = 0;
+        }
+
+        //abheben
+        else if (operation == 'w') {
+            //Eingabeaufforderung
+            printf("ABHEBUNG \nKontonummer: ");
+            scanf(" %d", &kontoNrTemp);
+            clearInput();
+            printf("Betrag in ct: ");
+            scanf(" %d", &betragTemp);
+            clearInput();
+
+            testVariable = withdraw(konten, kontoNrTemp, betragTemp);
+            if (testVariable == 0)
+                printf("Abhebung erfolgreich");
+            else
+                printf("Fehler beim Abheben!");
+
+            testVariable = 1;
+            //zurücksetzen, damit bei anderer funktion die if-Bedinung nicht fälschlicherweise zutrifft
+        }
+
+        //einzahlen
+        else if (operation == 'd') {
+            //Eingabeaufforderung
+            printf("EINZAHLUNG \nKontonummer: ");
+            scanf(" %d", &kontoNrTemp);
+            clearInput();
+            printf("Betrag in ct: ");
+            scanf(" %d", &betragTemp);
+            clearInput();
+
+            testVariable = deposit(konten, kontoNrTemp, betragTemp);
+            if (testVariable == 0)
+                printf("Einzahlung erfolgreich");
+            else
+                printf("Fehler beim Einzahlen!");
+
+            testVariable = 1;
+            //zurücksetzen, damit bei anderer funktion die if-Bedinung nicht fälschlicherweise zutrifft
+        }
+
+        //Überweisung
+        else if (operation == 't') {
+            //Eingabeaufforderung
+            printf("ÜBERWEISUNG \nKontonummer d. Zahlers: ");
+            scanf(" %d", &kontoNrTemp);
+            clearInput();
+
+            printf("Kontonummer d. Empfängers: ");
+            scanf(" %d", &kontoNrTemp2);
+            clearInput();
+
+            printf("Betrag in ct: ");
+            scanf(" %d", &betragTemp);
+            clearInput();
+
+            //Werte eintragen
+            testVariable = transfer(konten, kontoNrTemp, kontoNrTemp2, betragTemp);
+
+            //Überprüfung auf Fehler
+            if (testVariable == 0)
+                printf("Überweisung erfolgreich");
+            else
+                printf("Fehler beim Überweisen!");
+
+            testVariable = 1;
+            //zurücksetzen, damit bei anderer funktion die if-Bedinung nicht fälschlicherweise zutrifft
+        }
+
+        //falls etwas anderes eingegeben wird:
         else {
-
-            konten = tmpAos;
-
-            newAccount(konten, anzahlPtr);
-
-            printf("\nKonto erfolgreich erstellt.");
+            printf("Eingabe unzulässig.\n");
         }
-    } //neues Konto anlegen
+
+    }
+
+    clearInput();
 
     free(konten);
     fclose(accounts);
@@ -155,13 +268,13 @@ int writeToFile() {
     fclose(accounts);
 }
 
-void newAccount(struct Konto *aos, int* anzahlPtr) {
+int newAccount(struct Konto *aos, int* anzahlPtr) {
     //Anzahl der Konten intern erhöhen
     int anzahl = *(anzahlPtr) + 1;
 
     char inhaberNeu[40];
     int startguthaben;
-    printf("NEUES KONTO \nInhaber:");
+    printf("NEUES KONTO \nInhaber: ");
     fgets(inhaberNeu, 40, stdin);
 
 
@@ -184,16 +297,25 @@ void newAccount(struct Konto *aos, int* anzahlPtr) {
 
     //Anzahl d. Konten global erhöhen
     *anzahlPtr += 1;
+
+    return 0;
 }
 
-int withdraw() {
+int withdraw(struct Konto *aos,int kontoNr, int betrag) {
+    (aos + kontoNr)->guthaben -= betrag;
 
+    return 0; //lasse ich noch offen, vielleicht return neues guthaben
+} // Ohne Abfrage in der Funktion, um es mit transfer() kompatibel zu machen
+
+int deposit(struct Konto *aos,int kontoNr, int betrag) {
+    (aos + kontoNr)->guthaben += betrag;
+
+    return 0;
 }
 
-int deposit() {
+int transfer(struct Konto *aos, int zahlerNr, int empfangerNr, int betrag) {
+    withdraw(aos, zahlerNr, betrag);
+    deposit(aos, empfangerNr, betrag);
 
+    return 0;
 }
-
-int transfer() {
-
-} //Kombination aus withdraw und deposit
