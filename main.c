@@ -61,11 +61,12 @@ int main() {
                 exit(1);
             } else {
                 konten = tmpAos;
+                free(tmpAos);
 
                 testVariable = newAccount(konten, anzahlPtr);
 
                 if (testVariable == 0)
-                    printf("Abheben erfolgreich");
+                    printf("Abheben erfolgreich. Kontunummer: %d", anzahl - 1);
                 else
                     printf("Fehler beim Erstellen eines Kontos!");
 
@@ -78,15 +79,25 @@ int main() {
         else if (operation == '?') {
             printf("Hilfe - Operationen\n");
             printf("n - Neues Konto\n");
+            printf("p - Kontodaten drucken\n");
             printf("w - Abheben\n");
             printf("d - Einzahlen\n");
             printf("t - Überweisung\n");
-            printf("s - Änderungen in Backup-Datei speichern\n"); //noch nicht umgesetzt
+            printf("s - Änderungen in Backup-Datei speichern"); //noch nicht umgesetzt
         }
 
         //Ende - Programm beenden
         else if (operation == 'e') {
             whileBedingung = 0;
+        }
+
+        //Kontodaten drucken
+        else if (operation == 'p') {
+            printf("KONTO DRUCKEN \nKontonummer: ");
+            scanf(" %d", &kontoNrTemp);
+            printf("Inhaber: ");
+            puts(konten[kontoNrTemp].inhaber);
+            printf("Kontostand: %.2f", (float) konten[kontoNrTemp].guthaben / 100);
         }
 
         //abheben
@@ -99,9 +110,10 @@ int main() {
             scanf(" %d", &betragTemp);
             clearInput();
 
+            printf("Kontostand vorher: %.2f", (float) konten[kontoNrTemp].guthaben / 100);
             testVariable = withdraw(konten, kontoNrTemp, betragTemp);
             if (testVariable == 0)
-                printf("Abhebung erfolgreich");
+                printf("\nAbhebung erfolgreich. Neuer Kontostand: %.2f", (float) konten[kontoNrTemp].guthaben / 100);
             else
                 printf("Fehler beim Abheben!");
 
@@ -119,9 +131,10 @@ int main() {
             scanf(" %d", &betragTemp);
             clearInput();
 
+            printf("Kontostand vorher: %.2f", (float) konten[kontoNrTemp].guthaben / 100);
             testVariable = deposit(konten, kontoNrTemp, betragTemp);
             if (testVariable == 0)
-                printf("Einzahlung erfolgreich");
+                printf("\nEinzahlung erfolgreich. Neuer Kontostand: %.2f", (float) konten[kontoNrTemp].guthaben / 100);
             else
                 printf("Fehler beim Einzahlen!");
 
@@ -145,11 +158,12 @@ int main() {
             clearInput();
 
             //Werte eintragen
+            printf("Kontostände vorher: Zahler: %.2f, Empfänger: %.2f", (float) konten[kontoNrTemp].guthaben / 100, (float) konten[kontoNrTemp2].guthaben / 100);
             testVariable = transfer(konten, kontoNrTemp, kontoNrTemp2, betragTemp);
 
             //Überprüfung auf Fehler
             if (testVariable == 0)
-                printf("Überweisung erfolgreich");
+                printf("\nÜberweisung erfolgreich. Neue Kontostände: Zahler: %.2f, Empfänger: %.2f", (float) konten[kontoNrTemp].guthaben / 100, (float) konten[kontoNrTemp2].guthaben / 100);
             else
                 printf("Fehler beim Überweisen!");
 
@@ -161,6 +175,8 @@ int main() {
         else {
             printf("Eingabe unzulässig.\n");
         }
+
+        printf("\n\n");
 
     }
 
@@ -270,6 +286,7 @@ int writeToFile() {
 
 int newAccount(struct Konto *aos, int* anzahlPtr) {
     //Anzahl der Konten intern erhöhen
+    clearInput();
     int anzahl = *(anzahlPtr) + 1;
 
     char inhaberNeu[40];
