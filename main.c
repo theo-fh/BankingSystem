@@ -2,9 +2,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#define DATEI ("../accounts")
-#define BAUTO ("../backup-auto")
-#define BUSER ("../backup-user")
+#define DATEI ("../data/accounts")
+#define BAUTO ("../backups/backup-auto")
+#define BUSER ("../backups/backup-user")
+#define BNEW ("../backups/backup-new")
 #define INTMAX (2000000000) //Guthaben auf 20 Mio. Euro begrenzt
 
 struct Konto {
@@ -57,19 +58,16 @@ int main() {
     }
     fclose(backupAuto);
 
-    //Eingabeaufforderung: Welche Operation?
-    char operation;
-
-
-    //Problem: Abheben von Kontonummer 0 hat Probleme gemacht, jetzt nicht mehr??
-
+    //Eingabeaufforderung: Welche Operation (opLoad für Operation Backup laden)?
+    char operation, opLoad;
 
     //Immer wieder Eingabe bis zum Programmende
     while (whileBedingung) {
         printf("Operation (? für Hilfe, e für Ende): ");
         scanf(" %c", &operation);
 
-        //was noch fehlt: nach jeder Operation die entsprechenden Konten anzeigen
+        //TODO: Kontoinhaber bei operationen anzeigen.
+
 
         //Anmerkung: Ein switch statement wäre hier evtl. schöner, mir reicht aber eine else if-Leiter aus.
         //neues Konto anlegen
@@ -104,7 +102,8 @@ int main() {
             printf("w - Abheben\n");
             printf("d - Einzahlen\n");
             printf("t - Überweisung\n");
-            printf("s - Änderungen in Backup-Datei speichern"); //noch nicht umgesetzt
+            printf("s - Änderungen in Backup-Datei speichern\n");
+            printf("l - Backup laden");
         }
 
         //Ende - Programm beenden
@@ -207,6 +206,40 @@ int main() {
 
         }
 
+        //TODO: Backups laden testen.
+        else if (operation == 'l') {
+            printf("BACKUP LADEN - Optionen: \n");
+            printf("a - backup-auto (bei Programmstart erstellt)\n");
+            printf("u - backup-user (durch Operation 's' erstellt)\n");
+            printf("n - backup-new (durch Operation 'n' erstellt)\n"); //TODO: backup-new implementieren in neues Konto
+            printf("Welches Backup? ");
+            scanf(" %c", &opLoad);
+
+            int testLoad = 0;
+            FILE* fptr;
+            switch (opLoad) {
+                case 'a':
+                    fptr = fopen(BAUTO, "r");
+                    auslesen(fptr, konten, anzahlKonten(fptr));
+                    break;
+                case 'u':
+                    fptr = fopen(BUSER, "r");
+                    auslesen(fptr, konten, anzahlKonten(fptr));
+                    break;
+                case 'n':
+                    fptr = fopen(BNEW, "r");
+                    auslesen(fptr, konten, anzahlKonten(fptr));
+                    break;
+                default:
+                    printf("Eingabe unzulässig.");
+                    testLoad = 1;
+            }
+            if (testLoad == 0) {
+                printf("Backup geladen. Neustart wird empfohlen.");
+            }
+
+        }
+
         //falls etwas anderes eingegeben wird:
         else {
             printf("Eingabe unzulässig.\n");
@@ -219,7 +252,6 @@ int main() {
 
     clearInput();
 
-    //TODO alle funktionen, die in/aus Dateien schreiben oder lesen mit negativen Guthaben kompatibel machen
     printf("Speichert auf Datei...\n");
     accounts = fopen(DATEI, "w");
     writeToFile(accounts, konten, anzahl);
@@ -393,7 +425,7 @@ int withdraw(struct Konto *aos,int kontoNr, int betrag) {
     (aos + kontoNr)->guthaben -= betrag;
 
     if ((aos + kontoNr)->guthaben < 0) {
-        printf("ACHTUNG: Guthaben ausgenutzt. Kontostand negativ.\n");
+        printf("\nACHTUNG: Guthaben ausgenutzt. Kontostand negativ.\n");
     }
     return 0; //lasse ich noch offen, vielleicht return neues guthaben
 } // Ohne Abfrage in der Funktion, um es mit transfer() kompatibel zu machen
