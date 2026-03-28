@@ -5,6 +5,7 @@
 #define DATEI ("../accounts")
 #define BAUTO ("../backup-auto")
 #define BUSER ("../backup-user")
+#define INTMAX (2000000000) //Guthaben auf 20 Mio. Euro begrenzt
 
 struct Konto {
     int guthaben; //in ct
@@ -62,6 +63,7 @@ int main() {
 
     //Problem: Abheben von Kontonummer 0 hat Probleme gemacht, jetzt nicht mehr??
 
+
     //Immer wieder Eingabe bis zum Programmende
     while (whileBedingung) {
         printf("Operation (? für Hilfe, e für Ende): ");
@@ -81,7 +83,6 @@ int main() {
             }
 
             konten = tmpAos;
-
 
             testVariable = newAccount(konten, anzahlPtr);
 
@@ -119,6 +120,7 @@ int main() {
             puts(konten[kontoNrTemp].inhaber);
             printf("Kontostand: %.2f €", (float) konten[kontoNrTemp].guthaben / 100);
         }
+
 
         //abheben
         else if (operation == 'w') {
@@ -159,7 +161,7 @@ int main() {
                 printf("Fehler beim Einzahlen!");
 
             testVariable = 1;
-            //zurücksetzen, damit bei anderer funktion die if-Bedinung nicht fälschlicherweise zutrifft
+            //zurücksetzen, damit bei anderer funktion die if-Bedingung nicht fälschlicherweise zutrifft
         }
 
         //Überweisung
@@ -212,10 +214,12 @@ int main() {
 
         printf("\n\n");
 
+
     }
 
     clearInput();
 
+    //TODO alle funktionen, die in/aus Dateien schreiben oder lesen mit negativen Guthaben kompatibel machen
     printf("Speichert auf Datei...\n");
     accounts = fopen(DATEI, "w");
     writeToFile(accounts, konten, anzahl);
@@ -270,8 +274,16 @@ void auslesen(FILE* datei, struct Konto *aos, int anzahl) {
         int stellen = n-1;
 
         int guthaben = 0;
-        for (int i = stellen; i >= 0; i--) {
-            guthaben += ((int) guthabenStr[i] - 48)*pow(10, stellen - i);
+        if (guthabenStr[0] == '-') {
+            for (int i = stellen; i >= 1; i--) {
+                guthaben += ((int) guthabenStr[i] - 48)*pow(10, stellen - i);
+            }
+            guthaben *= -1;
+        }
+        else {
+            for (int i = stellen; i >= 0; i--) {
+                guthaben += ((int) guthabenStr[i] - 48)*pow(10, stellen - i);
+            }
         }
         (aos + kontoNr)->guthaben = guthaben;
 
@@ -298,9 +310,15 @@ int writeToFile(FILE* fptr, struct Konto* aos, int anzahl) {
     for (int kontoNr = 0; kontoNr<anzahl; kontoNr++) {
         //String mit Kontodaten neu initiieren
         char info[63] = {0};
+        int stellen;
 
         //guthaben drucken
-        int stellen = (int) log10(aos[kontoNr].guthaben) + 1;
+        if (aos[kontoNr].guthaben > 0) {
+            stellen = (int) log10(aos[kontoNr].guthaben) + 1;
+        }
+        else {
+            stellen = (int) log10(-1 * aos[kontoNr].guthaben) + 2;
+        }
         sprintf(info, "%d", aos[kontoNr].guthaben);
 
         //Rest des Platzes mit Leerzeichen füllen
@@ -327,6 +345,8 @@ int writeToFile(FILE* fptr, struct Konto* aos, int anzahl) {
 
         fprintf(fptr, "%s", info);
     }
+
+    return 0;
 }
 
 int newAccount(struct Konto *aos, int* anzahlPtr) {
@@ -353,6 +373,12 @@ int newAccount(struct Konto *aos, int* anzahlPtr) {
     scanf(" %d", &startguthaben);
     clearInput();
 
+    //Guthaben begrenzen auf 2 Mia. Cent (20 Mio. Euro) --> bis dahin gehen Integer ungefähr
+    if ( startguthaben > INTMAX) {
+        printf("Kontostand zu groß, um in Integer zu passen. Herzlichen Glückwunsch.\n");
+        return 1;
+    }
+
     //Angaben in AOS übernehmen
     strcpy((aos + anzahl - 1)->inhaber, inhaberNeu);
     (aos + anzahl - 1)->guthaben = startguthaben;
@@ -366,10 +392,17 @@ int newAccount(struct Konto *aos, int* anzahlPtr) {
 int withdraw(struct Konto *aos,int kontoNr, int betrag) {
     (aos + kontoNr)->guthaben -= betrag;
 
+    if ((aos + kontoNr)->guthaben < 0) {
+        printf("ACHTUNG: Guthaben ausgenutzt. Kontostand negativ.\n");
+    }
     return 0; //lasse ich noch offen, vielleicht return neues guthaben
 } // Ohne Abfrage in der Funktion, um es mit transfer() kompatibel zu machen
 
 int deposit(struct Konto *aos,int kontoNr, int betrag) {
+    if ( (aos + kontoNr)->guthaben + betrag > INTMAX) {
+        printf("Guthaben nicht zugeschrieben. Zu hohes Guthaben. Herzlichen Glückwunsch.\n");
+        return 1;
+    }
     (aos + kontoNr)->guthaben += betrag;
 
     return 0;
