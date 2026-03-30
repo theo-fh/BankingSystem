@@ -214,7 +214,7 @@ int main() {
             printf("Zahler: %s, Empfänger: %s\n", konten[kontoNrTemp].inhaber, konten[kontoNrTemp2].inhaber);
 
             printf("Betrag in ct: ");
-            scanf(" %d", &betragTemp);
+            scanf(" %ld", &betragLongTemp);
             clearInput();
 
             if ((long int)betragLongTemp + konten[kontoNrTemp2].guthaben > INTMAX) {
