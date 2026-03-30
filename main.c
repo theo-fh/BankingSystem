@@ -60,7 +60,6 @@ int main() {
     //Eingabeaufforderung: Welche Operation (opLoad für Operation Backup laden)?
     char operation, opLoad;
 
-    //TODO: bei jeder Eingabe testen, ob die Kontonummer existiert (kontoNrTemp>0 --> nicht ausführen)
     //Immer wieder Eingabe bis zum Programmende
     while (whileBedingung) {
         printf("Operation (? für Hilfe, e für Ende): ");
@@ -280,10 +279,16 @@ int main() {
                     // auslesen(fptr, konten, anzahlKonten(fptr));
                     break;
                 default:
-                    printf("Eingabe unzulässig.");
+                    printf("Eingabe unzulässig.\n\n");
                     testLoad = 1;
+                    continue;
             }
             fptr = fopen(pfad, "r");
+            if (fptr == NULL) {
+                printf("Laden fehlgeschlagen. Keine Backup-Datei.\n\n");
+                fclose(fptr);
+                continue;
+            }
             anzahl = anzahlKonten(fptr);
             konten = realloc(konten, anzahl * sizeof(struct Konto));
             if (konten == NULL) {
