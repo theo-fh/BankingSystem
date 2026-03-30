@@ -20,6 +20,7 @@ int transfer(struct Konto *, int, int, int);
 
 int main() {
 
+    //accounts.txt ist eine Dependency!
     //Dateipfad bestimmen
     FILE* accounts = fopen(DATEI, "r+");
     if (accounts == NULL) {
@@ -38,6 +39,7 @@ int main() {
     int anzahl = anzahlKonten(accounts);
     int *anzahlPtr = &anzahl;
     struct Konto *konten = (struct Konto*) malloc(anzahl*sizeof(struct Konto)); //Gibt Warnung über Memory Leak, hab ich mich aber eigentlich drum gekümmert...
+
 
     //Datei accounts.txt auslesen
     auslesen(accounts, konten, anzahl);
@@ -58,6 +60,7 @@ int main() {
     //Eingabeaufforderung: Welche Operation (opLoad für Operation Backup laden)?
     char operation, opLoad;
 
+    //TODO: bei jeder Eingabe testen, ob die Kontonummer existiert (kontoNrTemp>0 --> nicht ausführen)
     //Immer wieder Eingabe bis zum Programmende
     while (whileBedingung) {
         printf("Operation (? für Hilfe, e für Ende): ");
@@ -117,6 +120,10 @@ int main() {
         else if (operation == 'p') {
             printf("KONTO DRUCKEN \nKontonummer: ");
             scanf(" %d", &kontoNrTemp);
+            if (kontoNrTemp > (anzahl -1)) {
+                printf("Kein Konto zu dieser Kontonummer.\n\n");
+                continue;
+            }
             printf("Inhaber: ");
             puts(konten[kontoNrTemp].inhaber);
             printf("Kontostand: %.2f €", (float) konten[kontoNrTemp].guthaben / 100);
@@ -129,6 +136,10 @@ int main() {
             printf("ABHEBUNG \nKontonummer: ");
             scanf(" %d", &kontoNrTemp);
             clearInput();
+            if (kontoNrTemp > (anzahl -1)) {
+                printf("Kein Konto zu dieser Kontonummer.\n\n");
+                continue;
+            }
             //Kontoinhaber anzeigen
             printf("Inhaber: %s\n", konten[kontoNrTemp].inhaber);
 
@@ -147,13 +158,16 @@ int main() {
             //zurücksetzen, damit bei anderer funktion die if-Bedingung nicht fälschlicherweise zutrifft
         }
 
-        //TODO: maximales Guthaben wirklich begrenzen
         //einzahlen
         else if (operation == 'd') {
             //Eingabeaufforderung
             printf("EINZAHLUNG \nKontonummer: ");
             scanf(" %d", &kontoNrTemp);
             clearInput();
+            if (kontoNrTemp > (anzahl -1)) {
+                printf("Kein Konto zu dieser Kontonummer.\n\n");
+                continue;
+            }
             //Kontoinhaber anzeigen
             printf("Inhaber: %s\n", konten[kontoNrTemp].inhaber);
 
@@ -185,10 +199,19 @@ int main() {
             printf("ÜBERWEISUNG \nKontonummer d. Zahlers: ");
             scanf(" %d", &kontoNrTemp);
             clearInput();
+            if (kontoNrTemp > (anzahl -1)) {
+                printf("Kein Konto zu dieser Kontonummer.\n\n");
+                continue;
+            }
 
             printf("Kontonummer d. Empfängers: ");
             scanf(" %d", &kontoNrTemp2);
             clearInput();
+            if (kontoNrTemp2 > (anzahl -1)) {
+                printf("Kein Konto zu dieser Kontonummer.\n\n");
+                continue;
+            }
+
             printf("Zahler: %s, Empfänger: %s\n", konten[kontoNrTemp].inhaber, konten[kontoNrTemp2].inhaber);
 
             printf("Betrag in ct: ");
@@ -237,26 +260,41 @@ int main() {
             printf("n - backup-new (durch Operation 'n' erstellt)\n");
             printf("Welches Backup? ");
             scanf(" %c", &opLoad);
-
+            char pfad[25];
             int testLoad = 0;
             FILE* fptr;
             switch (opLoad) {
                 case 'a':
-                    fptr = fopen(BAUTO, "r");
-                    auslesen(fptr, konten, anzahlKonten(fptr));
+                    sprintf(pfad, BAUTO);
+                    // fptr = fopen(BAUTO, "r");
+                    // auslesen(fptr, konten, anzahlKonten(fptr));
                     break;
                 case 'u':
-                    fptr = fopen(BUSER, "r");
-                    auslesen(fptr, konten, anzahlKonten(fptr));
+                    sprintf(pfad, BUSER);
+                    // fptr = fopen(BUSER, "r");
+                    // auslesen(fptr, konten, anzahlKonten(fptr));
                     break;
                 case 'n':
-                    fptr = fopen(BNEW, "r");
-                    auslesen(fptr, konten, anzahlKonten(fptr));
+                    sprintf(pfad, BNEW);
+                    // fptr = fopen(BNEW, "r");
+                    // auslesen(fptr, konten, anzahlKonten(fptr));
                     break;
                 default:
                     printf("Eingabe unzulässig.");
                     testLoad = 1;
             }
+            fptr = fopen(pfad, "r");
+            anzahl = anzahlKonten(fptr);
+            konten = realloc(konten, anzahl * sizeof(struct Konto));
+            if (konten == NULL) {
+                printf("Laden fehlgeschlagen.");
+                free(konten);
+                fclose(fptr);
+                exit(1);
+            }
+            auslesen(fptr, konten, anzahl);
+            fclose(fptr);
+
             if (testLoad == 0) {
                 printf("Backup geladen. Neustart wird empfohlen.");
             }
