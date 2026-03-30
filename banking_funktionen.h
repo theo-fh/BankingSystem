@@ -177,10 +177,7 @@ inline int withdraw(struct Konto *aos,int kontoNr, int betrag) {
 } // Ohne Abfrage in der Funktion, um es mit transfer() kompatibel zu machen
 
 inline int deposit(struct Konto *aos,int kontoNr, int betrag) {
-    if ( (aos + kontoNr)->guthaben + betrag > INTMAX) {
-        printf("Guthaben nicht zugeschrieben. Zu hohes Guthaben. Herzlichen Glückwunsch.\n");
-        return 1;
-    }
+
     (aos + kontoNr)->guthaben += betrag;
 
     return 0;

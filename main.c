@@ -34,6 +34,7 @@ int main() {
     int testVariable; //um z.B. auf return 0 zu prüfen
     int kontoNrTemp, kontoNrTemp2;
     int betragTemp; //damit bei erneutem Ausführen von z.B. withdraw nicht eine bereits existierende betrag-Variable intitiiert wird
+    long int betragLongTemp;
     int anzahl = anzahlKonten(accounts);
     int *anzahlPtr = &anzahl;
     struct Konto *konten = (struct Konto*) malloc(anzahl*sizeof(struct Konto)); //Gibt Warnung über Memory Leak, hab ich mich aber eigentlich drum gekümmert...
@@ -143,7 +144,7 @@ int main() {
                 printf("Fehler beim Abheben!");
 
             testVariable = 1;
-            //zurücksetzen, damit bei anderer funktion die if-Bedinung nicht fälschlicherweise zutrifft
+            //zurücksetzen, damit bei anderer funktion die if-Bedingung nicht fälschlicherweise zutrifft
         }
 
         //TODO: maximales Guthaben wirklich begrenzen
@@ -157,9 +158,15 @@ int main() {
             printf("Inhaber: %s\n", konten[kontoNrTemp].inhaber);
 
             printf("Betrag in ct: ");
-            scanf(" %d", &betragTemp);
+            scanf(" %ld", &betragLongTemp);
             clearInput();
 
+            if ((long int)betragLongTemp + konten[kontoNrTemp].guthaben > INTMAX) {
+                printf("Guthaben nicht zugeschrieben. Zu hohes Guthaben. Herzlichen Glückwunsch.\n");
+                continue;
+            }
+
+            betragTemp = (int) betragLongTemp;
 
             printf("Kontostand vorher: %.2f €", (float) konten[kontoNrTemp].guthaben / 100);
             testVariable = deposit(konten, kontoNrTemp, betragTemp);
@@ -187,6 +194,13 @@ int main() {
             printf("Betrag in ct: ");
             scanf(" %d", &betragTemp);
             clearInput();
+
+            if ((long int)betragLongTemp + konten[kontoNrTemp2].guthaben > INTMAX) {
+                printf("Guthaben nicht zugeschrieben. Zu hohes Guthaben. Herzlichen Glückwunsch.\n");
+                continue;
+            }
+
+            betragTemp = (int) betragLongTemp;
 
             //Werte berechnen
             printf("Kontostände vorher: Zahler: %.2f €, Empfänger: %.2f €", (float) konten[kontoNrTemp].guthaben / 100, (float) konten[kontoNrTemp2].guthaben / 100);
