@@ -2,25 +2,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "banking_funktionen.h"
 #define DATEI ("../data/accounts")
 #define BAUTO ("../backups/backup-auto")
 #define BUSER ("../backups/backup-user")
 #define BNEW ("../backups/backup-new")
 #define INTMAX (2000000000) //Guthaben auf 20 Mio. Euro begrenzt
 
-struct Konto {
-    int guthaben; //in ct
-    char inhaber[40];
-};
-
 void clearInput();
-int anzahlKonten(FILE*); //Nicht mehr richtig, sobald newAccount() benutzt wurde!!!
+int anzahlKonten(FILE*);
 void auslesen(FILE*, struct Konto*, int);
 int writeToFile(FILE*, struct Konto*, int);
-int newAccount(struct Konto*, int*);
-int withdraw(struct Konto*, int, int);
-int deposit(struct Konto*, int, int);
-int transfer(struct Konto*, int, int, int);
+int newAccount(struct Konto *, int*);
+int withdraw(struct Konto *, int, int);
+int deposit(struct Konto *,int, int);
+int transfer(struct Konto *, int, int, int);
 
 int main() {
 
@@ -66,16 +62,21 @@ int main() {
         printf("Operation (? für Hilfe, e für Ende): ");
         scanf(" %c", &operation);
 
-        //TODO: Kontoinhaber bei operationen anzeigen.
-
-
         //Anmerkung: Ein switch statement wäre hier evtl. schöner, mir reicht aber eine else if-Leiter aus.
         //neues Konto anlegen
         if (operation == 'n') {
+            FILE* backupNew = fopen(BNEW, "w");
+            if (backupNew == NULL) {
+                printf("Datei für Backup konnte nicht erstellt werden.");
+            }
+            else {
+                writeToFile(backupNew, konten, anzahl);
+            }
+            fclose(backupNew);
             tmpAos = (struct Konto*)realloc(konten, anzahl * sizeof(struct Konto) + sizeof(struct Konto));
             // Platz für weiteren Eintrag
             if (tmpAos == NULL) {
-                printf("Fehler bei Speicherzuweisung.");
+                printf("Fehler bei Speicherzuweisung. Empfehlung: backup-new laden.");
                 free(tmpAos);
                 exit(1);
             }
@@ -127,6 +128,9 @@ int main() {
             printf("ABHEBUNG \nKontonummer: ");
             scanf(" %d", &kontoNrTemp);
             clearInput();
+            //Kontoinhaber anzeigen
+            printf("Inhaber: %s\n", konten[kontoNrTemp].inhaber);
+
             printf("Betrag in ct: ");
             scanf(" %d", &betragTemp);
             clearInput();
@@ -142,15 +146,20 @@ int main() {
             //zurücksetzen, damit bei anderer funktion die if-Bedinung nicht fälschlicherweise zutrifft
         }
 
+        //TODO: maximales Guthaben wirklich begrenzen
         //einzahlen
         else if (operation == 'd') {
             //Eingabeaufforderung
             printf("EINZAHLUNG \nKontonummer: ");
             scanf(" %d", &kontoNrTemp);
             clearInput();
+            //Kontoinhaber anzeigen
+            printf("Inhaber: %s\n", konten[kontoNrTemp].inhaber);
+
             printf("Betrag in ct: ");
             scanf(" %d", &betragTemp);
             clearInput();
+
 
             printf("Kontostand vorher: %.2f €", (float) konten[kontoNrTemp].guthaben / 100);
             testVariable = deposit(konten, kontoNrTemp, betragTemp);
@@ -173,12 +182,13 @@ int main() {
             printf("Kontonummer d. Empfängers: ");
             scanf(" %d", &kontoNrTemp2);
             clearInput();
+            printf("Zahler: %s, Empfänger: %s\n", konten[kontoNrTemp].inhaber, konten[kontoNrTemp2].inhaber);
 
             printf("Betrag in ct: ");
             scanf(" %d", &betragTemp);
             clearInput();
 
-            //Werte eintragen
+            //Werte berechnen
             printf("Kontostände vorher: Zahler: %.2f €, Empfänger: %.2f €", (float) konten[kontoNrTemp].guthaben / 100, (float) konten[kontoNrTemp2].guthaben / 100);
             testVariable = transfer(konten, kontoNrTemp, kontoNrTemp2, betragTemp);
 
@@ -196,7 +206,7 @@ int main() {
         else if (operation == 's') {
             FILE* backupUser = fopen(BUSER, "w");
             if (backupUser == NULL) {
-                printf("Datei für automatische Backups konnte nicht erstellt werden.");
+                printf("Datei für Backup konnte nicht erstellt werden.");
             }
             else {
                 writeToFile(backupUser, konten, anzahl);
@@ -206,12 +216,11 @@ int main() {
 
         }
 
-        //TODO: Backups laden testen.
         else if (operation == 'l') {
             printf("BACKUP LADEN - Optionen: \n");
             printf("a - backup-auto (bei Programmstart erstellt)\n");
             printf("u - backup-user (durch Operation 's' erstellt)\n");
-            printf("n - backup-new (durch Operation 'n' erstellt)\n"); //TODO: backup-new implementieren in neues Konto
+            printf("n - backup-new (durch Operation 'n' erstellt)\n");
             printf("Welches Backup? ");
             scanf(" %c", &opLoad);
 
@@ -259,190 +268,6 @@ int main() {
     fclose(accounts);
 
     free(konten);
-
-
-    return 0;
-}
-
-
-
-//FUNKTIONEN
-
-void clearInput() {
-    int c;
-    while ((c = getchar()) != EOF && c != '\n') {}
-}
-
-int anzahlKonten(FILE* datei) {
-
-    //Menge der char in der File lesen (bis EOF)
-    char c;
-    int i = 0;
-    while ((c = fgetc(datei)) != EOF) {
-        i++;
-    }
-
-    //daraus Anzahl der Konten (--> feste Zeilenlänge)
-    int zeilenlänge = 62;
-    int anzahlKonten = i/zeilenlänge;
-
-    return anzahlKonten;
-}
-
-void auslesen(FILE* datei, struct Konto *aos, int anzahl) {
-    int zeilenlaenge = 62;
-    fseek(datei, 0, SEEK_SET);
-    for (int kontoNr = 0; kontoNr < anzahl; kontoNr++) {
-        fseek(datei, zeilenlaenge * kontoNr, SEEK_SET);
-        char guthabenStr[30] = {0};
-        char inhaberStr[40] = {0};
-        int n = 0;
-        char c;
-        while ((c = fgetc(datei)) != ' ') {
-            guthabenStr[n] = c;
-            n++;
-        } //Guthaben des Kontos lesen
-        guthabenStr[n] = '\0'; //String kürzen, damit nur "Integer" und '\0' enthalten sind
-        int stellen = n-1;
-
-        int guthaben = 0;
-        if (guthabenStr[0] == '-') {
-            for (int i = stellen; i >= 1; i--) {
-                guthaben += ((int) guthabenStr[i] - 48)*pow(10, stellen - i);
-            }
-            guthaben *= -1;
-        }
-        else {
-            for (int i = stellen; i >= 0; i--) {
-                guthaben += ((int) guthabenStr[i] - 48)*pow(10, stellen - i);
-            }
-        }
-        (aos + kontoNr)->guthaben = guthaben;
-
-        fseek(datei, (long int) zeilenlaenge * kontoNr + 20, SEEK_SET);
-        n = 0;
-        while ((c = fgetc(datei)) != '/') {
-            inhaberStr[n] = c;
-            n++;
-        } //Inhaber des Kontos lesen
-
-        for (int i = 39; i >= 0; i--) {
-            if (inhaberStr[i] != ' ') {
-                inhaberStr[i+1] = '\0';
-                break;
-            }
-        }
-
-        strcpy((aos + kontoNr)->inhaber, inhaberStr);
-    }
-}
-
-int writeToFile(FILE* fptr, struct Konto* aos, int anzahl) {
-
-    for (int kontoNr = 0; kontoNr<anzahl; kontoNr++) {
-        //String mit Kontodaten neu initiieren
-        char info[63] = {0};
-        int stellen;
-
-        //guthaben drucken
-        if (aos[kontoNr].guthaben > 0) {
-            stellen = (int) log10(aos[kontoNr].guthaben) + 1;
-        }
-        else {
-            stellen = (int) log10(-1 * aos[kontoNr].guthaben) + 2;
-        }
-        sprintf(info, "%d", aos[kontoNr].guthaben);
-
-        //Rest des Platzes mit Leerzeichen füllen
-        for (int i=stellen; i < 20; i++) {
-            info[i] = ' ';
-        }
-
-        //Inhaber drucken
-        strcat(info, aos[kontoNr].inhaber);
-
-
-        //Rest mit Leerzeichen füllen
-        int stringLaenge = strlen(info); //länge des Strings ohne '\0'
-
-        // info[20 + stringLaenge] = '\0';
-        for (int i = stringLaenge; i < 60; i++) {
-            info[i] = ' ';
-        }
-
-        //Das hier war die Lösung:
-        info[60] = '\0';
-        //Ende mit "/\n" besetzen
-        strcat(info, "/\n");
-
-        fprintf(fptr, "%s", info);
-    }
-
-    return 0;
-}
-
-int newAccount(struct Konto *aos, int* anzahlPtr) {
-    //Anzahl der Konten intern erhöhen
-    clearInput();
-    int anzahl = *(anzahlPtr) + 1;
-
-    char inhaberNeu[40];
-    int startguthaben;
-    printf("NEUES KONTO \nInhaber: ");
-    fgets(inhaberNeu, 40, stdin);
-
-
-    // Newline aus dem Input entfernen
-    for (int i = 0; i < 40; i++) {
-        if (inhaberNeu[i] == '\n') {
-            inhaberNeu[i] = '\0';
-            break;
-        }
-    }
-
-
-    printf("Startguthaben in Cent: ");
-    scanf(" %d", &startguthaben);
-    clearInput();
-
-    //Guthaben begrenzen auf 2 Mia. Cent (20 Mio. Euro) --> bis dahin gehen Integer ungefähr
-    if ( startguthaben > INTMAX) {
-        printf("Kontostand zu groß, um in Integer zu passen. Herzlichen Glückwunsch.\n");
-        return 1;
-    }
-
-    //Angaben in AOS übernehmen
-    strcpy((aos + anzahl - 1)->inhaber, inhaberNeu);
-    (aos + anzahl - 1)->guthaben = startguthaben;
-
-    //Anzahl d. Konten global erhöhen
-    *anzahlPtr += 1;
-
-    return 0;
-}
-
-int withdraw(struct Konto *aos,int kontoNr, int betrag) {
-    (aos + kontoNr)->guthaben -= betrag;
-
-    if ((aos + kontoNr)->guthaben < 0) {
-        printf("\nACHTUNG: Guthaben ausgenutzt. Kontostand negativ.\n");
-    }
-    return 0; //lasse ich noch offen, vielleicht return neues guthaben
-} // Ohne Abfrage in der Funktion, um es mit transfer() kompatibel zu machen
-
-int deposit(struct Konto *aos,int kontoNr, int betrag) {
-    if ( (aos + kontoNr)->guthaben + betrag > INTMAX) {
-        printf("Guthaben nicht zugeschrieben. Zu hohes Guthaben. Herzlichen Glückwunsch.\n");
-        return 1;
-    }
-    (aos + kontoNr)->guthaben += betrag;
-
-    return 0;
-}
-
-int transfer(struct Konto *aos, int zahlerNr, int empfangerNr, int betrag) {
-    withdraw(aos, zahlerNr, betrag);
-    deposit(aos, empfangerNr, betrag);
 
     return 0;
 }
