@@ -9,6 +9,7 @@
 #define BNEW ("../backups/backup-new")
 #define INTMAX (2000000000) //Guthaben auf 20 Mio. Euro begrenzt
 
+//TODO: Schreiben in accounts funktioniert nicht, liegt vielleicht an Anzahl-Variable
 
 //Funktionen aus Header rufen
 void clearInput();                              //löscht input, falls user mehr als ein char + \n eingegeben hat
@@ -22,6 +23,8 @@ int transfer(struct Konto *, int);              //Überweisung mit Abfrage, quas
 void hilfe();                                   //druckt alle möglichen Operationen
 int drucken(struct Konto*, int);                //druckt die Daten eines Kontos aus (Inhaber, Guthaben)
 int chooseBackup(char *);                       //Abfrage, welches Backup geladen werden soll, schreibt in einen String, der dann auslesen() überreicht wird
+
+
 
 int main() {
 
@@ -51,6 +54,7 @@ int main() {
                 break;
             case 'n':
                 newAccount(&konten, &anzahl);
+                break;
             case 'e':
                 whileBedingung = 0;
                 break;
@@ -82,8 +86,6 @@ int main() {
 
         printf("\n\n");
     }
-
-    clearInput();
 
     writeToFile(DATEI, konten, anzahl);
 

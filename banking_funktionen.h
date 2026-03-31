@@ -141,7 +141,7 @@ inline int writeToFile(char pfad[25], struct Konto* aos, int anzahl) {
 
         fprintf(datei, "%s", info);
     }
-    printf("Backup erfolgreich erstellt. Pfad: %s\n", pfad);
+    printf("Datei beschrieben. Pfad: %s\n", pfad);
     fclose(datei);
     return 0;
 }
