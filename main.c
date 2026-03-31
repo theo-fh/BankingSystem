@@ -9,320 +9,83 @@
 #define BNEW ("../backups/backup-new")
 #define INTMAX (2000000000) //Guthaben auf 20 Mio. Euro begrenzt
 
-void clearInput();
-int anzahlKonten(FILE*);
-void auslesen(FILE*, struct Konto*, int);
-int writeToFile(FILE*, struct Konto*, int);
-int newAccount(struct Konto *, int*);
-int withdraw(struct Konto *, int, int);
-int deposit(struct Konto *,int, int);
-int transfer(struct Konto *, int, int, int);
+
+//Funktionen aus Header rufen
+void clearInput();                              //löscht input, falls user mehr als ein char + \n eingegeben hat
+int anzahlKonten(FILE*);                        //rechnet Anzahl der Konten aus Anzahl der Zeichen in einer datei, Anzahl ist wichtige Variable für fast alle funktionen
+int auslesen(char*, struct Konto**, int*);      //liest von Datei mit gegebenem Pfad die Kontodaten aller Einträge in ein Array
+int writeToFile(char*, struct Konto*, int);     //schreibt die (ggf. geänderten) Daten wieder in eine Datei mit gegebenem Pfad ein
+int newAccount(struct Konto **, int*);          //fügt neues Konto hinzu, nachdem es das Array um einen Eintrag erweitert hat
+int withdraw(struct Konto *, int);              //Abhebung mit Abfrage von Kontonr. und Betrag
+int deposit(struct Konto *, int);               //Einzahlung, analog zu Abhebung
+int transfer(struct Konto *, int);              //Überweisung mit Abfrage, quasi Kombination aus Abhebung und Einzahlung
+void hilfe();                                   //druckt alle möglichen Operationen
+int drucken(struct Konto*, int);                //druckt die Daten eines Kontos aus (Inhaber, Guthaben)
+int chooseBackup(char *);                       //Abfrage, welches Backup geladen werden soll, schreibt in einen String, der dann auslesen() überreicht wird
 
 int main() {
 
-    //accounts.txt ist eine Dependency!
-    //Dateipfad bestimmen
-    FILE* accounts = fopen(DATEI, "r+");
-    if (accounts == NULL) {
-        printf("Fehler beim lesen der Datei.");
-        exit(1);
-    }
-
-
     //VARIABLEN
-    struct Konto *tmpAos;
     int whileBedingung = 1;
-    int testVariable; //um z.B. auf return 0 zu prüfen
-    int kontoNrTemp, kontoNrTemp2;
-    int betragTemp; //damit bei erneutem Ausführen von z.B. withdraw nicht eine bereits existierende betrag-Variable intitiiert wird
-    long int betragLongTemp;
-    int anzahl = anzahlKonten(accounts);
-    int *anzahlPtr = &anzahl;
-    struct Konto *konten = (struct Konto*) malloc(anzahl*sizeof(struct Konto)); //Gibt Warnung über Memory Leak, hab ich mich aber eigentlich drum gekümmert...
-
+    char pfadLoad[25]; //kann nicht direkt nach "case 'l':" im switch statement stehen
+    int anzahl;
+    struct Konto *konten = (struct Konto*)malloc(sizeof(struct Konto));
 
     //Datei accounts.txt auslesen
-    auslesen(accounts, konten, anzahl);
-
-    fclose(accounts);
+    auslesen(DATEI, &konten, &anzahl);
 
     //Automatisches Backup erstellen
-    FILE* backupAuto = fopen(BAUTO, "w");
-    if (backupAuto == NULL) {
-        printf("Datei für automatische Backups konnte nicht erstellt werden.");
-    }
-    else {
-        writeToFile(backupAuto, konten, anzahl);
-        printf("Backup erfolgreich erstellt. Pfad: %s\n", BAUTO);
-    }
-    fclose(backupAuto);
+    writeToFile(BAUTO, konten, anzahl);
 
     //Eingabeaufforderung: Welche Operation (opLoad für Operation Backup laden)?
-    char operation, opLoad;
+    char operation;
 
     //Immer wieder Eingabe bis zum Programmende
     while (whileBedingung) {
         printf("Operation (? für Hilfe, e für Ende): ");
         scanf(" %c", &operation);
 
-        //Anmerkung: Ein switch statement wäre hier evtl. schöner, mir reicht aber eine else if-Leiter aus.
-        //neues Konto anlegen
-        if (operation == 'n') {
-            FILE* backupNew = fopen(BNEW, "w");
-            if (backupNew == NULL) {
-                printf("Datei für Backup konnte nicht erstellt werden.");
-            }
-            else {
-                writeToFile(backupNew, konten, anzahl);
-            }
-            fclose(backupNew);
-            tmpAos = (struct Konto*)realloc(konten, anzahl * sizeof(struct Konto) + sizeof(struct Konto));
-            // Platz für weiteren Eintrag
-            if (tmpAos == NULL) {
-                printf("Fehler bei Speicherzuweisung. Empfehlung: backup-new laden.");
-                free(tmpAos);
-                exit(1);
-            }
-
-            konten = tmpAos;
-
-            testVariable = newAccount(konten, anzahlPtr);
-
-            if (testVariable == 0)
-                printf("Abheben erfolgreich. Kontunummer: %d", anzahl - 1);
-            else
-                printf("Fehler beim Erstellen eines Kontos!");
-
-            testVariable = 1;
-            //zurücksetzen, damit bei anderer funktion die if-Bedinung nicht fälschlicherweise zutrifft
-
-        }
-
-        //Hilfe
-        else if (operation == '?') {
-            printf("Hilfe - Operationen\n");
-            printf("n - Neues Konto\n");
-            printf("p - Kontodaten drucken\n");
-            printf("w - Abheben\n");
-            printf("d - Einzahlen\n");
-            printf("t - Überweisung\n");
-            printf("s - Änderungen in Backup-Datei speichern\n");
-            printf("l - Backup laden");
-        }
-
-        //Ende - Programm beenden
-        else if (operation == 'e') {
-            whileBedingung = 0;
-        }
-
-        //Kontodaten drucken
-        else if (operation == 'p') {
-            printf("KONTO DRUCKEN \nKontonummer: ");
-            scanf(" %d", &kontoNrTemp);
-            if (kontoNrTemp > (anzahl -1)) {
-                printf("Kein Konto zu dieser Kontonummer.\n\n");
-                continue;
-            }
-            printf("Inhaber: ");
-            puts(konten[kontoNrTemp].inhaber);
-            printf("Kontostand: %.2f €", (float) konten[kontoNrTemp].guthaben / 100);
-        }
-
-
-        //abheben
-        else if (operation == 'w') {
-            //Eingabeaufforderung
-            printf("ABHEBUNG \nKontonummer: ");
-            scanf(" %d", &kontoNrTemp);
-            clearInput();
-            if (kontoNrTemp > (anzahl -1)) {
-                printf("Kein Konto zu dieser Kontonummer.\n\n");
-                continue;
-            }
-            //Kontoinhaber anzeigen
-            printf("Inhaber: %s\n", konten[kontoNrTemp].inhaber);
-
-            printf("Betrag in ct: ");
-            scanf(" %d", &betragTemp);
-            clearInput();
-
-            printf("Kontostand vorher: %.2f €", (float) konten[kontoNrTemp].guthaben / 100);
-            testVariable = withdraw(konten, kontoNrTemp, betragTemp);
-            if (testVariable == 0)
-                printf("\nAbhebung erfolgreich. Neuer Kontostand: %.2f €", (float) konten[kontoNrTemp].guthaben / 100);
-            else
-                printf("Fehler beim Abheben!");
-
-            testVariable = 1;
-            //zurücksetzen, damit bei anderer funktion die if-Bedingung nicht fälschlicherweise zutrifft
-        }
-
-        //einzahlen
-        else if (operation == 'd') {
-            //Eingabeaufforderung
-            printf("EINZAHLUNG \nKontonummer: ");
-            scanf(" %d", &kontoNrTemp);
-            clearInput();
-            if (kontoNrTemp > (anzahl -1)) {
-                printf("Kein Konto zu dieser Kontonummer.\n\n");
-                continue;
-            }
-            //Kontoinhaber anzeigen
-            printf("Inhaber: %s\n", konten[kontoNrTemp].inhaber);
-
-            printf("Betrag in ct: ");
-            scanf(" %ld", &betragLongTemp);
-            clearInput();
-
-            if ((long int)betragLongTemp + konten[kontoNrTemp].guthaben > INTMAX) {
-                printf("Guthaben nicht zugeschrieben. Zu hohes Guthaben. Herzlichen Glückwunsch.\n");
-                continue;
-            }
-
-            betragTemp = (int) betragLongTemp;
-
-            printf("Kontostand vorher: %.2f €", (float) konten[kontoNrTemp].guthaben / 100);
-            testVariable = deposit(konten, kontoNrTemp, betragTemp);
-            if (testVariable == 0)
-                printf("\nEinzahlung erfolgreich. Neuer Kontostand: %.2f €", (float) konten[kontoNrTemp].guthaben / 100);
-            else
-                printf("Fehler beim Einzahlen!");
-
-            testVariable = 1;
-            //zurücksetzen, damit bei anderer funktion die if-Bedingung nicht fälschlicherweise zutrifft
-        }
-
-        //Überweisung
-        else if (operation == 't') {
-            //Eingabeaufforderung
-            printf("ÜBERWEISUNG \nKontonummer d. Zahlers: ");
-            scanf(" %d", &kontoNrTemp);
-            clearInput();
-            if (kontoNrTemp > (anzahl -1)) {
-                printf("Kein Konto zu dieser Kontonummer.\n\n");
-                continue;
-            }
-
-            printf("Kontonummer d. Empfängers: ");
-            scanf(" %d", &kontoNrTemp2);
-            clearInput();
-            if (kontoNrTemp2 > (anzahl -1)) {
-                printf("Kein Konto zu dieser Kontonummer.\n\n");
-                continue;
-            }
-
-            printf("Zahler: %s, Empfänger: %s\n", konten[kontoNrTemp].inhaber, konten[kontoNrTemp2].inhaber);
-
-            printf("Betrag in ct: ");
-            scanf(" %ld", &betragLongTemp);
-            clearInput();
-
-            if ((long int)betragLongTemp + konten[kontoNrTemp2].guthaben > INTMAX) {
-                printf("Guthaben nicht zugeschrieben. Zu hohes Guthaben. Herzlichen Glückwunsch.\n");
-                continue;
-            }
-
-            betragTemp = (int) betragLongTemp;
-
-            //Werte berechnen
-            printf("Kontostände vorher: Zahler: %.2f €, Empfänger: %.2f €", (float) konten[kontoNrTemp].guthaben / 100, (float) konten[kontoNrTemp2].guthaben / 100);
-            testVariable = transfer(konten, kontoNrTemp, kontoNrTemp2, betragTemp);
-
-            //Überprüfung auf Fehler
-            if (testVariable == 0)
-                printf("\nÜberweisung erfolgreich. Neue Kontostände: Zahler: %.2f €, Empfänger: %.2f €", (float) konten[kontoNrTemp].guthaben / 100, (float) konten[kontoNrTemp2].guthaben / 100);
-            else
-                printf("Fehler beim Überweisen!");
-
-            testVariable = 1;
-            //zurücksetzen, damit bei anderer funktion die if-Bedinung nicht fälschlicherweise zutrifft
-        }
-
-        //Backup erstellen
-        else if (operation == 's') {
-            FILE* backupUser = fopen(BUSER, "w");
-            if (backupUser == NULL) {
-                printf("Datei für Backup konnte nicht erstellt werden.");
-            }
-            else {
-                writeToFile(backupUser, konten, anzahl);
-                printf("Backup erfolgreich erstellt. Pfad: %s\n", BUSER);
-            }
-            fclose(backupUser);
-
-        }
-
-        else if (operation == 'l') {
-            printf("BACKUP LADEN - Optionen: \n");
-            printf("a - backup-auto (bei Programmstart erstellt)\n");
-            printf("u - backup-user (durch Operation 's' erstellt)\n");
-            printf("n - backup-new (durch Operation 'n' erstellt)\n");
-            printf("Welches Backup? ");
-            scanf(" %c", &opLoad);
-            char pfad[25];
-            int testLoad = 0;
-            FILE* fptr;
-            switch (opLoad) {
-                case 'a':
-                    sprintf(pfad, BAUTO);
-                    // fptr = fopen(BAUTO, "r");
-                    // auslesen(fptr, konten, anzahlKonten(fptr));
-                    break;
-                case 'u':
-                    sprintf(pfad, BUSER);
-                    // fptr = fopen(BUSER, "r");
-                    // auslesen(fptr, konten, anzahlKonten(fptr));
-                    break;
-                case 'n':
-                    sprintf(pfad, BNEW);
-                    // fptr = fopen(BNEW, "r");
-                    // auslesen(fptr, konten, anzahlKonten(fptr));
-                    break;
-                default:
-                    printf("Eingabe unzulässig.\n\n");
-                    testLoad = 1;
-                    continue;
-            }
-            fptr = fopen(pfad, "r");
-            if (fptr == NULL) {
-                printf("Laden fehlgeschlagen. Keine Backup-Datei.\n\n");
-                fclose(fptr);
-                continue;
-            }
-            anzahl = anzahlKonten(fptr);
-            konten = realloc(konten, anzahl * sizeof(struct Konto));
-            if (konten == NULL) {
-                printf("Laden fehlgeschlagen.");
-                free(konten);
-                fclose(fptr);
-                exit(1);
-            }
-            auslesen(fptr, konten, anzahl);
-            fclose(fptr);
-
-            if (testLoad == 0) {
-                printf("Backup geladen. Neustart wird empfohlen.");
-            }
-
-        }
-
-        //falls etwas anderes eingegeben wird:
-        else {
-            printf("Eingabe unzulässig.\n");
+        switch (operation) {
+            case '?':
+                hilfe();
+                break;
+            case 'n':
+                newAccount(&konten, &anzahl);
+            case 'e':
+                whileBedingung = 0;
+                break;
+            case 'p':
+                drucken(konten, anzahl);
+                break;
+            case 'w':
+                withdraw(konten, anzahl);
+                break;
+            case 'd':
+                deposit(konten, anzahl);
+                break;
+            case 't':
+                transfer(konten, anzahl);
+                break;
+            case 's':
+                writeToFile(BUSER, konten, anzahl);
+                break;
+            case 'l':
+                if (chooseBackup(pfadLoad) == 0) {
+                    if (auslesen(pfadLoad, &konten, &anzahl) == 0) {
+                        printf("Backup erfolgreich geladen. Ein Neustart wird empfohlen.");
+                    }
+                }
+                break;
+            default:
+                printf("Eingabe unzulässig.");
         }
 
         printf("\n\n");
-
-
     }
 
     clearInput();
 
-    printf("Speichert auf Datei...\n");
-    accounts = fopen(DATEI, "w");
-    writeToFile(accounts, konten, anzahl);
-
-    fclose(accounts);
+    writeToFile(DATEI, konten, anzahl);
 
     free(konten);
 
