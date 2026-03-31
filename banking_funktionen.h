@@ -17,12 +17,22 @@ struct Konto {
 };
 
 inline void clearInput() {
+    /*
+    Leert den Input-Buffer
+    Kann dazu führen, dass Enter ein zweites Mal gedrückt werden muss, um den nächsten Output zu erreichen.
+    */
+
     int c;
     while ((c = getchar()) != EOF && c != '\n') {}
 }
 
 inline int anzahlKonten(FILE* datei) {
+    /*
+     Zählt die Länge der gegebenen Datei und berechnet daraus die Anzahl an Zeilen bei fester zeilenlänge inkl. newline
+     Funktionalität beruht auf Tabellenform der Datei
 
+     datei -
+     */
     //Menge der char in der File lesen (bis EOF)
     char c;
     int i = 0;
@@ -38,6 +48,9 @@ inline int anzahlKonten(FILE* datei) {
 }
 
 inline int auslesen(char pfad[25], struct Konto **aos,int* anzahlPtr) {
+    /*
+    Liest Einträge aus Datei (Tabellenform) und gibt sie in
+     */
     FILE* datei = fopen(pfad, "r");
     if (datei == NULL) {
         printf("Fehler beim lesen der Datei.");
