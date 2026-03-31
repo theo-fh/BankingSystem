@@ -49,8 +49,13 @@ inline int anzahlKonten(FILE* datei) {
 
 inline int auslesen(char pfad[25], struct Konto **aos,int* anzahlPtr) {
     /*
-    Liest Einträge aus Datei (Tabellenform) und gibt sie in
+    Liest Einträge aus Datei (Tabellenform) und gibt sie in das geg. Array aus
+
+    pfad[25] - dateipfad, aus dem gelesen wird (lässt nur Platz für relative Pfade)
+    **aos - Pointer zum Array (zu Pointer)
+    *anzahlPtr - Pointer zur Anzahl der Konten, wird für andere Funktionen bestimmt
      */
+
     FILE* datei = fopen(pfad, "r");
     if (datei == NULL) {
         printf("Fehler beim lesen der Datei.");
@@ -104,13 +109,19 @@ inline int auslesen(char pfad[25], struct Konto **aos,int* anzahlPtr) {
         strcpy((*(aos) + kontoNr)->inhaber, inhaberStr);
     }
     fclose(datei);
-
     return 0;
 }
 
 inline int writeToFile(char pfad[25], struct Konto* aos, int anzahl) {
+    /*
+    Quasi das Gegenteil von auslesen()
+    Schreibt Kontodaten eines Kontos in einen String, der dann in einer neuen Zeile an die Datei angefügt wird
 
-    FILE* datei = fopen(BAUTO, "w");
+    pfad[25] - Pfad zur Datei, in der die Daten stehen
+    *aos - Array mit Daten
+    anzahl - Anzahl von Konten, sagt der Funktion, wan sie aufhören soll zu schreiben, um keine Müllwerte einzuschreiben
+     */
+    FILE* datei = fopen(pfad, "w");
     if (datei == NULL) {
         printf("Datei konnte nicht erstellt werden.");
         return 1;
@@ -122,12 +133,13 @@ inline int writeToFile(char pfad[25], struct Konto* aos, int anzahl) {
         int stellen;
 
         //guthaben drucken
-        if (aos[kontoNr].guthaben > 0) {
+        if (aos[kontoNr].guthaben > 0)
             stellen = (int) log10(aos[kontoNr].guthaben) + 1;
-        }
-        else {
+        else if (aos[kontoNr].guthaben == 0)
+            stellen = 1;
+        else
             stellen = (int) log10(-1 * aos[kontoNr].guthaben) + 2;
-        }
+
         sprintf(info, "%d", aos[kontoNr].guthaben);
 
         //Rest des Platzes mit Leerzeichen füllen
@@ -154,12 +166,19 @@ inline int writeToFile(char pfad[25], struct Konto* aos, int anzahl) {
 
         fprintf(datei, "%s", info);
     }
-    printf("Datei beschrieben. Pfad: %s\n", pfad);
+    printf("Kontodaten gesichert. Pfad: %s\n", pfad);
     fclose(datei);
     return 0;
 }
 
 inline int newAccount(struct Konto **aos, int* anzahlPtr) {
+    /*
+    Fügt neues Konto hinzu, inkl. Abfrage für Inhaber und Startguthaben
+    Druckt dann die neue Kontonummer.
+
+    **aos - Array mit Daten. Pointer zum Pointer, um realloc verwenden zu können
+    *anzahlPtr - um die Anzahl der Konten in main um 1 zu erhöhen
+     */
     writeToFile(BNEW, *aos, *anzahlPtr);
     struct Konto *tmpAos = (struct Konto*)realloc(*aos, *anzahlPtr * sizeof(struct Konto) + sizeof(struct Konto));
     // Platz für weiteren Eintrag
@@ -207,13 +226,20 @@ inline int newAccount(struct Konto **aos, int* anzahlPtr) {
 }
 
 inline int withdraw(struct Konto *konten,int anzahl) {
+    /*
+    Abheben - nimmt Kontonummer und Betrag entgegen und schreibt Änderung des Guthabens in das Array
+
+    *konten - Array mit Daten
+    anzahl - Anzahl der Konten im Array
+     */
+
     int kontoNrTemp, betragTemp;
     //Eingabeaufforderung
     printf("ABHEBUNG \nKontonummer: ");
     scanf(" %d", &kontoNrTemp);
     clearInput();
     if (kontoNrTemp > (anzahl -1)) {
-        printf("Kein Konto zu dieser Kontonummer.\n\n");
+        printf("Kein Konto zu dieser Kontonummer.");
         return 1;
     }
     //Kontoinhaber anzeigen
@@ -237,13 +263,19 @@ inline int withdraw(struct Konto *konten,int anzahl) {
 }
 
 inline int deposit(struct Konto *konten,int anzahl) {
+    /*
+    Einzahlen - nimmt Kontonummer und Betrag entgegen und schreibt Änderung des Guthabens in Array
+
+    *konten - Array mit Kontodaten
+    anzahl - Anzahl der Konten im Array
+     */
     int kontoNrTemp, betragTemp;
     int long betragLongTemp;
     printf("EINZAHLUNG \nKontonummer: ");
     scanf(" %d", &kontoNrTemp);
     clearInput();
     if (kontoNrTemp > (anzahl -1)) {
-        printf("Kein Konto zu dieser Kontonummer.\n\n");
+        printf("Kein Konto zu dieser Kontonummer.");
         return 1;
     }
     //Kontoinhaber anzeigen
@@ -269,6 +301,12 @@ inline int deposit(struct Konto *konten,int anzahl) {
 }
 
 inline int transfer(struct Konto *konten, int anzahl) {
+    /*
+    Überweisung - nimmt Kontonummer von Zahler u. Empfänger sowie den Betrag entgegen, schreibt Änderungen der Guthaben in Array
+
+    *konten - Array mit Kontodaten
+    anzahl - Anzahl der Kontos im Array
+     */
     int kontoNrTemp, kontoNrTemp2, betragTemp;
     int long betragLongTemp;
 
@@ -277,7 +315,7 @@ inline int transfer(struct Konto *konten, int anzahl) {
     scanf(" %d", &kontoNrTemp);
     clearInput();
     if (kontoNrTemp > (anzahl -1)) {
-        printf("Kein Konto zu dieser Kontonummer.\n\n");
+        printf("Kein Konto zu dieser Kontonummer.");
         return 1;
     }
 
@@ -285,7 +323,7 @@ inline int transfer(struct Konto *konten, int anzahl) {
     scanf(" %d", &kontoNrTemp2);
     clearInput();
     if (kontoNrTemp2 > (anzahl -1)) {
-        printf("Kein Konto zu dieser Kontonummer.\n\n");
+        printf("Kein Konto zu dieser Kontonummer.");
         return 1;
     }
 
@@ -307,13 +345,16 @@ inline int transfer(struct Konto *konten, int anzahl) {
     konten[kontoNrTemp].guthaben -= betragTemp;
     konten[kontoNrTemp2].guthaben += betragTemp;
 
-    printf("Kontostände nachher: Zahler: %.2f €, Empfänger: %.2f €", (float) konten[kontoNrTemp].guthaben / 100, (float) konten[kontoNrTemp2].guthaben / 100);
+    printf("\nKontostände nachher: Zahler: %.2f €, Empfänger: %.2f €", (float) konten[kontoNrTemp].guthaben / 100, (float) konten[kontoNrTemp2].guthaben / 100);
 
 
     return 0;
 }
 
 inline void hilfe() {
+    /*
+    Druckt alle Befehle, die der Benutzer ausführen kann → alles andere gibt Error aus
+     */
     printf("Hilfe - Operationen\n");
     printf("n - Neues Konto\n");
     printf("p - Kontodaten drucken\n");
@@ -325,11 +366,17 @@ inline void hilfe() {
 }
 
 inline int drucken(struct Konto* konten, int anzahl) {
+    /*
+    Druckt Inhaber und Guthaben eines Kontos aus
+
+    *konten - Array mit Kontodaten
+    anzahl - Anzahl der Konten im Array
+     */
     int kontoNr;
     printf("KONTO DRUCKEN \nKontonummer: ");
     scanf(" %d", &kontoNr);
     if (kontoNr > (anzahl -1)) {
-        printf("Kein Konto zu dieser Kontonummer.\n\n");
+        printf("Kein Konto zu dieser Kontonummer.");
         return 1;
     }
     printf("Inhaber: ");
@@ -341,6 +388,11 @@ inline int drucken(struct Konto* konten, int anzahl) {
 }
 
 inline int chooseBackup(char *pfadPtr) {
+    /*
+    Interaktive Auswahl, welches Backup geladen werden soll. Für Verwendung mit writeToFile() vorgesehen.
+
+    *pfadPtr - Pointer zum pfad-String (muss genügend Platz haben → das wird schon im main() gewährleistet)
+     */
     char opLoad;
 
     printf("BACKUP LADEN - Optionen: \n");

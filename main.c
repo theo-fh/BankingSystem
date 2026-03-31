@@ -11,7 +11,7 @@
 
 //TODO: Schreiben in accounts funktioniert nicht, liegt vielleicht an Anzahl-Variable
 
-//Funktionen aus Header rufen
+//Funktionen
 void clearInput();                              //löscht input, falls user mehr als ein char + \n eingegeben hat
 int anzahlKonten(FILE*);                        //rechnet Anzahl der Konten aus Anzahl der Zeichen in einer datei, Anzahl ist wichtige Variable für fast alle funktionen
 int auslesen(char*, struct Konto**, int*);      //liest von Datei mit gegebenem Pfad die Kontodaten aller Einträge in ein Array
@@ -24,17 +24,11 @@ void hilfe();                                   //druckt alle möglichen Operati
 int drucken(struct Konto*, int);                //druckt die Daten eines Kontos aus (Inhaber, Guthaben)
 int chooseBackup(char *);                       //Abfrage, welches Backup geladen werden soll, schreibt in einen String, der dann auslesen() überreicht wird
 
-
-
 int main() {
 
-    //VARIABLEN
-    int whileBedingung = 1;
-    char pfadLoad[25]; //kann nicht direkt nach "case 'l':" im switch statement stehen
+    //Datei accounts.txt auslesen
     int anzahl;
     struct Konto *konten = (struct Konto*)malloc(sizeof(struct Konto));
-
-    //Datei accounts.txt auslesen
     auslesen(DATEI, &konten, &anzahl);
 
     //Automatisches Backup erstellen
@@ -42,6 +36,10 @@ int main() {
 
     //Eingabeaufforderung: Welche Operation (opLoad für Operation Backup laden)?
     char operation;
+
+    //Variablen:
+    char pfadLoad[25]; //kann nicht direkt nach "case 'l':" im switch statement stehen
+    int whileBedingung = 1;
 
     //Immer wieder Eingabe bis zum Programmende
     while (whileBedingung) {
