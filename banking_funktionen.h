@@ -362,7 +362,8 @@ inline void hilfe() {
     printf("d - Einzahlen\n");
     printf("t - Überweisung\n");
     printf("s - Änderungen in Backup-Datei speichern\n");
-    printf("l - Backup laden");
+    printf("l - Backup laden\n");
+    printf("e - Speichern und beenden");
 }
 
 inline int drucken(struct Konto* konten, int anzahl) {

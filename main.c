@@ -9,8 +9,6 @@
 #define BNEW ("../backups/backup-new")
 #define INTMAX (2000000000) //Guthaben auf 20 Mio. Euro begrenzt
 
-//TODO: Schreiben in accounts funktioniert nicht, liegt vielleicht an Anzahl-Variable
-
 //Funktionen
 void clearInput();                              //löscht input, falls user mehr als ein char + \n eingegeben hat
 int anzahlKonten(FILE*);                        //rechnet Anzahl der Konten aus Anzahl der Zeichen in einer datei, Anzahl ist wichtige Variable für fast alle funktionen
@@ -43,7 +41,7 @@ int main() {
 
     //Immer wieder Eingabe bis zum Programmende
     while (whileBedingung) {
-        printf("Operation (? für Hilfe, e für Ende): ");
+        printf("Operation (? für Hilfe): ");
         scanf(" %c", &operation);
 
         switch (operation) {
