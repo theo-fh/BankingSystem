@@ -89,21 +89,15 @@ inline int auslesen(char pfad[25], struct Konto **aos,int* anzahlPtr) {
             n++;
         } //Guthaben des Kontos lesen
         guthabenStr[n] = '\0'; //String kürzen, damit nur "Integer" und '\0' enthalten sind
-        int stellen = n-1;
 
         int guthaben = 0;
-        if (guthabenStr[0] == '-') {
-            for (int i = stellen; i >= 1; i--) {
-                //TODO: pow kann Dinge wie 99.999998 liefern → wird zu 99 (lieber eine eigene power-funktion schreiben)
-                guthaben += ((int) guthabenStr[i] - 48)*pow(10, stellen - i);
-            }
-            guthaben *= -1;
+        char* endptr;
+        long int guthabenLong = strtol(guthabenStr, &endptr, 10);
+        if (guthabenLong > INT_MAX) {
+            printf("Fehler beim Auslesen. Kontonummer: %d", kontoNr);
+            return 1;
         }
-        else {
-            for (int i = stellen; i >= 0; i--) {
-                guthaben += ((int) guthabenStr[i] - 48)*pow(10, stellen - i);
-            }
-        }
+        guthaben = (int)guthabenLong;
         (*(aos) + kontoNr)->guthaben = guthaben;
 
         fseek(datei, (long int) zeilenlaenge * kontoNr + 20, SEEK_SET);
@@ -205,7 +199,6 @@ inline int newAccount(struct Konto **aos, int* anzahlPtr) {
     *aos = tmpAos;
 
     //Anzahl der Konten intern erhöhen
-    clearInput();
     int anzahl = *(anzahlPtr) + 1;
 
     char inhaberNeu[40];
@@ -335,7 +328,7 @@ inline int transfer(struct Konto *konten, int anzahl) {
     if (eingabeInt(&kontoNrTemp) != 0) {
         return 1;
     }
-    clearInput();
+
     if (kontoNrTemp > (anzahl -1)) {
         printf("Kein Konto zu dieser Kontonummer.");
         return 1;

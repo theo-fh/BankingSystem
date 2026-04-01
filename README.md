@@ -44,7 +44,7 @@ nicht etwa durch Schließen des Fensters.
 ## Features
 Das Programm lässt sich über eine interaktive Auswahl aus einigen Features bedienen. Ihre entsprechenden Funktionen sind im Kapitel "Funktionen" näher erläutert.
 ### Interaktion mit der Datenbank
-- **Auslesen:** Liest die Daten aus der bestehenden Datenbank. Die Datei muss folgende Form haben:
+- **Auslesen:** Liest die Daten aus der bestehenden Datenbank.
 - **Beschreiben:** Schreibt die Kontodaten, bei Programmende in die selbe Datenbank oder nach Wahl auch früher in eine Backup-Datei ein. 
 - **Backups:** laden und erstellen, gleiche Funktionsweise wie jeweils Beschreiben und Auslesen der Datenbank. 
 
@@ -87,6 +87,9 @@ Wie bereits im Kapitel "Features" angedeutet, besteht die Benutzeroberfläche au
 
 2. **Werte:** die Werte, mit dem das gewählte Feature arbeiten soll werden abgefragt. Das sind z.B. Kontonummer und Betrag. Meist werden mehrere Werte nacheinander abgefragt.
 
+
+3. **Ausgabe:** Änderungen werden in das Programm bzw. in die Datenbank geschrieben und Informationen ausgegeben
+
 Nach diesen beiden Abfragen wiederholt sich dieses Muster, bis im ersten Schritt `e` eingegeben wird.
 
 ## Funktionen und Variablen
@@ -120,3 +123,4 @@ Weitere Erläuterungen zu den einzelnen Funktionen sind in den Kommentaren im He
 - `anzahlKonten`: wird in `auslesen` gecallt, um `anzahl` anfänglich zu bestimmen bzw. beim laden eines Backups zu ändern
 - `hilfe`: gibt alle Eingabemöglichkeiten für den ersten Schritt der Nutzung aus
 - `chooseBackup`: Abfrage, um im Befehl `l` den Backup-Pfad auszuwählen ist von `auslesen` in diesem Fall getrennt, um komplizierten Umgang mit dem Array innerhalb mehrerer Funktionen zu vermeiden
+- `eingabeInt`: wie `scanf`, nur mit besserer Fehlerbehandlung
