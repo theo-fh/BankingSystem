@@ -63,7 +63,7 @@ Nach Ordner unterteilt:
 - **data/:** enthält die zugrunde liegende Datenbank
   - **accounts.txt:** Grundlegende Datenbank mit einem Eintrag (vom Programm benötigt)
   - **accounts (Kopie).txt:** Kopie dieser Datei, für Wiederherstellung hinzugefügt
-  - **accounts beispiel:** Beispielfall, 7 Einträge
+  - **accounts beispiel:** Beispielfall, einige zusätzliche Einträge
 - **backups:** enthält Backup-Dateien, zuerst leer, kann enthalten:
   - **backup-new:** wird erstellt, um gegen Fehler beim erstellen eines neuen Kontos abzusichern. Diese enstehen, wenn der Arbeitsspeicher vollständig ausgenutzt wird.
   - **backup-auto:** beim Programmstart erstellt
